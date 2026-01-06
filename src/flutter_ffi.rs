@@ -120,7 +120,7 @@ pub fn peer_get_sessions_count(id: String, conn_type: i32) -> SyncReturn<usize> 
     };
     SyncReturn(sessions::get_session_count(id, conn_type))
 }
-
+// Add an existed session to the session list.
 pub fn session_add_existed_sync(
     id: String,
     session_id: SessionID,

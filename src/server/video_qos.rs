@@ -54,6 +54,7 @@ struct UserDelay {
     increase_fps_count: usize,
 }
 
+// User delay history and statistics
 impl UserDelay {
     fn add_delay(&mut self, delay: u32) {
         self.rtt_calculator.update(delay);
@@ -112,7 +113,7 @@ pub struct VideoQoS {
     abr_config: bool,
     new_user_instant: Instant,
 }
-
+// Default implementation for VideoQoS
 impl Default for VideoQoS {
     fn default() -> Self {
         VideoQoS {
