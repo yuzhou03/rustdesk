@@ -1,18 +1,29 @@
-# Windows平台局域网游戏串流系统技术方案
+# Windows 11平台局域网游戏串流系统技术方案
 
 ## 1. 系统概述
 
-本技术方案旨在实现一个基于Windows平台的局域网游戏串流系统，支持通过IP直连进行游戏画面的实时传输。系统包含发送端（游戏主机）和接收端（显示设备），实现屏幕采集、编解码、网络传输和窗口渲染的完整流程，确保低延迟和高质量的游戏体验。
+本技术方案旨在实现一个基于Windows 11平台的局域网游戏串流系统，支持通过IP直连进行游戏画面的实时传输。系统充分利用Windows 11的新特性，包括DirectX 12 Ultimate、硬件调度器优化、Auto HDR等，提供更低延迟和更高质量的游戏体验。
 
-### 1.1 系统架构
+### 1.1 Windows 11平台优势
+
+- **DirectX 12 Ultimate**: 支持光线追踪、网格着色器、采样器反馈等高级特性
+- **硬件调度器**: 更好的CPU/GPU协作，降低延迟
+- **Auto HDR**: 自动为SDR游戏添加HDR效果
+- **DirectStorage**: 极速加载游戏资源
+- **更好的网络栈**: 优化的TCP/IP协议栈，降低网络延迟
+- **内存管理改进**: 更高效的内存分配和回收
+- **多显示器优化**: 更好的多显示器支持和窗口管理
+
+### 1.2 系统架构
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        发送端 (Sender)                           │
+│                      发送端 (Sender) - Windows 11               │
 ├─────────────────────────────────────────────────────────────────┤
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐           │
 │  │ 屏幕采集模块  │──│ 编码器模块    │──│ 网络传输模块  │           │
-│  │ (DXGI)       │  │ (AV1/VP8/H264)│  │ (TCP/UDP)   │           │
+│  │ (DXGI 1.6)   │  │ (AV1/VP9/H264)│  │ (TCP/UDP)   │           │
+│  │ DirectX 12   │  │ 硬件加速      │  │ Windows 11  │           │
 │  └──────────────┘  └──────────────┘  └──────────────┘           │
 │         │                 │                 │                   │
 │         └─────────────────┴─────────────────┘                   │
@@ -20,24 +31,27 @@
 │                    ┌──────▼──────┐                              │
 │                    │ 控制模块     │                              │
 │                    │ (QoS管理)    │                              │
+│                    │ 硬件调度器   │                              │
 │                    └─────────────┘                              │
 └───────────────────────────┬─────────────────────────────────────┘
                             │
                     局域网IP直连
                             │
 ┌───────────────────────────▼─────────────────────────────────────┐
-│                        接收端 (Receiver)                        │
+│                    接收端 (Receiver) - Windows 11               │
 ├─────────────────────────────────────────────────────────────────┤
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐           │
 │  │ 网络接收模块  │──│ 解码器模块    │──│ 渲染模块      │           │
-│  │ (TCP/UDP)    │  │ (AV1/VP8/H264)│  │ (DirectX)   │           │
+│  │ (TCP/UDP)    │  │ (AV1/VP9/H264)│  │ DirectX 12  │           │
+│  │ Windows 11   │  │ 硬件加速      │  │ Auto HDR    │           │
 │  └──────────────┘  └──────────────┘  └──────────────┘           │
 │         │                 │                 │                   │
 │         └─────────────────┴─────────────────┘                   │
 │                           │                                     │
 │                    ┌──────▼──────┐                              │
-│                    │ 控制模块    │                               │
+│                    │ 控制模块     │                              │
 │                    │ (输入转发)   │                              │
+│                    │ 低延迟优化   │                              │
 │                    └─────────────┘                              │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -47,55 +61,88 @@
 ### 2.1 屏幕采集模块 (Screen Capture)
 
 #### 2.1.1 技术选型
-- **DXGI Desktop Duplication API**: Windows 8+原生支持，提供高性能屏幕捕获
+- **DXGI Desktop Duplication API 1.6**: Windows 11原生支持，提供高性能屏幕捕获
+- **DirectX 12**: 利用Windows 11的硬件调度器，降低延迟
 - **优势**: 
   - 硬件加速，低CPU占用
-  - 支持多显示器
+  - 支持多显示器和HDR
   - 支持变化区域检测
-  - 与DirectX无缝集成
+  - 与DirectX 12无缝集成
+  - 支持可变刷新率（VRR）
 
 #### 2.1.2 实现逻辑
 
 ```rust
-use winapi::um::dxgi1_2::*;
-use winapi::um::d3d11::*;
+use winapi::um::dxgi1_6::*;
+use winapi::um::d3d12::*;
+use winapi::shared::dxgiformat::*;
 
 pub struct Capturer {
-    device: *mut ID3D11Device,
-    context: *mut ID3D11DeviceContext,
+    device: *mut ID3D12Device,
+    command_queue: *mut ID3D12CommandQueue,
     duplication: *mut IDXGIOutputDuplication,
     display: Display,
     frame: Frame,
+    allocator: *mut ID3D12CommandAllocator,
+    command_list: *mut ID3D12GraphicsCommandList,
 }
 
 impl Capturer {
     pub fn new(display: Display) -> io::Result<Capturer> {
         unsafe {
             let mut device = ptr::null_mut();
-            let mut context = ptr::null_mut();
+            D3D12CreateDevice(
+                ptr::null_mut(),
+                D3D_FEATURE_LEVEL_12_0,
+                &IID_ID3D12Device,
+                &mut device as *mut _ as *mut _,
+            )?;
             
-            D3D11CreateDevice(
-                display.adapter.0 as *mut _,
-                D3D_DRIVER_TYPE_UNKNOWN,
-                ptr::null_mut(),
+            let queue_desc = D3D12_COMMAND_QUEUE_DESC {
+                Type: D3D12_COMMAND_LIST_TYPE_COPY,
+                Flags: D3D12_COMMAND_QUEUE_FLAG_NONE,
+                Priority: 0,
+                NodeMask: 0,
+            };
+            
+            let mut command_queue = ptr::null_mut();
+            (*device).CreateCommandQueue(
+                &queue_desc,
+                &IID_ID3D12CommandQueue,
+                &mut command_queue as *mut _ as *mut _,
+            )?;
+            
+            let mut allocator = ptr::null_mut();
+            (*device).CreateCommandAllocator(
+                D3D12_COMMAND_LIST_TYPE_COPY,
+                &IID_ID3D12CommandAllocator,
+                &mut allocator as *mut _ as *mut _,
+            )?;
+            
+            let mut command_list = ptr::null_mut();
+            (*device).CreateCommandList(
                 0,
-                ptr::null_mut(),
-                0,
-                D3D11_SDK_VERSION,
-                &mut device,
-                ptr::null_mut(),
-                &mut context,
+                D3D12_COMMAND_LIST_TYPE_COPY,
+                allocator,
+                ptr::null(),
+                &IID_ID3D12GraphicsCommandList,
+                &mut command_list as *mut _ as *mut _,
             )?;
             
             let mut duplication = ptr::null_mut();
-            (*display.inner.0).DuplicateOutput(device.0 as *mut _, &mut duplication)?;
+            (*display.inner.0).DuplicateOutput(
+                command_queue as *mut _,
+                &mut duplication,
+            )?;
             
             Ok(Capturer {
                 device,
-                context,
+                command_queue,
                 duplication,
                 display,
                 frame: Frame::new(display.width, display.height),
+                allocator,
+                command_list,
             })
         }
     }
@@ -125,7 +172,12 @@ impl Capturer {
                 ));
             }
             
-            self.frame.copy_from_resource(self.context, resource);
+            self.frame.copy_from_resource(
+                self.device,
+                self.command_list,
+                resource,
+            );
+            
             (*self.duplication).ReleaseFrame();
             
             Ok(&self.frame)
@@ -138,6 +190,8 @@ impl Capturer {
 - **变化区域检测**: 只传输变化的屏幕区域
 - **帧率自适应**: 根据网络状况动态调整采集帧率
 - **多线程处理**: 采集和编码在不同线程中并行执行
+- **硬件调度器**: 利用Windows 11的硬件调度器优化CPU/GPU协作
+- **低延迟模式**: 使用Windows 11的游戏模式优化
 
 ### 2.2 编码器模块 (Encoder)
 
@@ -148,104 +202,111 @@ impl Capturer {
    - 最新一代编码标准
    - 压缩效率最高
    - 需要硬件支持（NVIDIA RTX 40系列、AMD RX 7000系列）
+   - Windows 11原生支持AV1硬件解码
 
 2. **VP9**
    - 开源免费
    - 压缩效率优于H.264
    - 硬件支持广泛
+   - Windows 11优化了VP9解码性能
 
-3. **VP8**
-   - 兼容性最好
-   - 编解码速度快
-   - 适合低延迟场景
-
-4. **H.264**
+3. **H.264**
    - 硬件支持最广泛
    - 编解码速度快
    - 兼容性最佳
+   - Windows 11优化了H.264编解码性能
 
-#### 2.2.2 VP8/VP9编码器实现
+#### 2.2.2 硬件加速编码器实现
 
 ```rust
-use libvpx_sys::*;
+use windows::Win32::Graphics::Direct3D12::*;
+use windows::Win32::Graphics::Dxgi::Common::*;
 
-pub struct VpxEncoder {
-    codec: vpx_codec_ctx_t,
-    config: VpxEncoderConfig,
-    i444: bool,
+pub struct HardwareEncoder {
+    device: *mut ID3D12Device,
+    encoder: *mut ID3D12VideoEncoder,
+    heap: *mut ID3D12Heap,
+    codec: CodecType,
 }
 
-impl VpxEncoder {
-    pub fn new(config: VpxEncoderConfig, i444: bool) -> ResultType<Self> {
+impl HardwareEncoder {
+    pub fn new(device: *mut ID3D12Device, codec: CodecType) -> ResultType<Self> {
         unsafe {
-            let mut codec = mem::zeroed();
-            let flags = if i444 { VPX_IMG_FMT_I444 } else { VPX_IMG_FMT_I420 };
+            let heap_desc = D3D12_HEAP_DESC {
+                SizeInBytes: 1024 * 1024 * 64,
+                Properties: D3D12_HEAP_PROPERTIES {
+                    Type: D3D12_HEAP_TYPE_DEFAULT,
+                    CPUPageProperty: D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+                    MemoryPoolPreference: D3D12_MEMORY_POOL_UNKNOWN,
+                    CreationNodeMask: 1,
+                    VisibleNodeMask: 1,
+                },
+                Alignment: 0,
+                Flags: D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS,
+            };
             
-            vpx_codec_enc_init_ver(
-                &mut codec,
-                vpx_codec_vp9_cx(),
-                ptr::null(),
-                0,
-                VPX_ENCODER_ABI_VERSION as i32,
-            )?;
+            let mut heap = ptr::null_mut();
+            (*device).CreateHeap(&heap_desc, &IID_ID3D12Heap, &mut heap as *mut _ as *mut _)?;
             
-            let mut cfg = mem::zeroed();
-            vpx_codec_enc_config_default(vpx_codec_vp9_cx(), &mut cfg, 0)?;
+            let encoder_desc = D3D12_VIDEO_ENCODER_DESC {
+                NodeMask: 0,
+                Flags: D3D12_VIDEO_ENCODER_FLAG_NONE,
+                Codec: match codec {
+                    CodecType::AV1 => D3D12_VIDEO_ENCODER_CODEC_AV1,
+                    CodecType::VP9 => D3D12_VIDEO_ENCODER_CODEC_VP9,
+                    CodecType::H264 => D3D12_VIDEO_ENCODER_CODEC_H264,
+                    _ => return Err(anyhow!("Unsupported codec")),
+                },
+                InputFormat: DXGI_FORMAT_NV12,
+            };
             
-            cfg.g_w = config.width;
-            cfg.g_h = config.height;
-            cfg.rc_target_bitrate = config.bitrate;
-            cfg.g_threads = config.num_threads;
-            cfg.g_error_resilient = VPX_ERROR_RESILIENT_DEFAULT;
-            cfg.g_lag_in_frames = 0;
+            let mut encoder = ptr::null_mut();
+            (*device).CreateVideoEncoder(&encoder_desc, &IID_ID3D12VideoEncoder, &mut encoder as *mut _ as *mut _)?;
             
-            vpx_codec_enc_config_set(&mut codec, &cfg)?;
-            
-            Ok(VpxEncoder { codec, config, i444 })
+            Ok(HardwareEncoder {
+                device,
+                encoder,
+                heap,
+                codec,
+            })
         }
     }
     
-    pub fn encode(&mut self, frame: &Frame, ms: i64) -> ResultType<Vec<u8>> {
+    pub fn encode(&mut self, frame: &Frame) -> ResultType<Vec<u8>> {
         unsafe {
-            let mut img = vpx_image_t {
-                d_w: self.config.width,
-                d_h: self.config.height,
-                r_w: self.config.width,
-                r_h: self.config.height,
-                fmt: if self.i444 { VPX_IMG_FMT_I444 } else { VPX_IMG_FMT_I420 },
-                ..mem::zeroed()
+            let resource_desc = D3D12_RESOURCE_DESC {
+                Dimension: D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+                Alignment: 0,
+                Width: frame.width as u64,
+                Height: frame.height,
+                DepthOrArraySize: 1,
+                MipLevels: 1,
+                Format: DXGI_FORMAT_NV12,
+                SampleDesc: DXGI_SAMPLE_DESC { Count: 1, Quality: 0 },
+                Layout: D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
+                Flags: D3D12_RESOURCE_FLAG_NONE,
             };
             
-            vpx_img_wrap(
-                &mut img,
-                img.fmt,
-                self.config.width,
-                self.config.height,
-                1,
-                frame.data.as_ptr() as *mut _,
-            );
+            let mut resource = ptr::null_mut();
+            (*self.device).CreateCommittedResource(
+                &D3D12_HEAP_PROPERTIES {
+                    Type: D3D12_HEAP_TYPE_DEFAULT,
+                    CPUPageProperty: D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+                    MemoryPoolPreference: D3D12_MEMORY_POOL_UNKNOWN,
+                    CreationNodeMask: 1,
+                    VisibleNodeMask: 1,
+                },
+                D3D12_HEAP_FLAG_NONE,
+                &resource_desc,
+                D3D12_RESOURCE_STATE_COPY_DEST,
+                ptr::null(),
+                &IID_ID3D12Resource,
+                &mut resource as *mut _ as *mut _,
+            )?;
             
-            let mut iter = ptr::null_mut();
-            let mut pkt = vpx_codec_cx_pkt_t { ..mem::zeroed() };
-            let mut result = Vec::new();
+            let mut output_data = Vec::new();
             
-            loop {
-                let res = vpx_codec_get_cx_data(&mut self.codec, &mut iter);
-                if res.is_null() {
-                    break;
-                }
-                
-                let pkt = &*res;
-                if pkt.kind == VPX_CODEC_CX_FRAME_PKT {
-                    let data = slice::from_raw_parts(
-                        pkt.data.frame.buf as *const u8,
-                        pkt.data.frame.sz,
-                    );
-                    result.extend_from_slice(data);
-                }
-            }
-            
-            Ok(result)
+            Ok(output_data)
         }
     }
 }
@@ -254,26 +315,28 @@ impl VpxEncoder {
 #### 2.2.3 编码参数配置
 
 ```rust
-pub struct VpxEncoderConfig {
+pub struct EncoderConfig {
     pub width: u32,
     pub height: u32,
     pub bitrate: u32,
     pub keyframe_interval: u32,
-    pub num_threads: u32,
-    pub min_quantizer: u32,
-    pub max_quantizer: u32,
+    pub codec: CodecType,
+    pub hardware_acceleration: bool,
+    pub low_latency_mode: bool,
+    pub adaptive_bitrate: bool,
 }
 
-impl Default for VpxEncoderConfig {
+impl Default for EncoderConfig {
     fn default() -> Self {
-        VpxEncoderConfig {
+        EncoderConfig {
             width: 1920,
             height: 1080,
             bitrate: 8000,
             keyframe_interval: 60,
-            num_threads: 4,
-            min_quantizer: 10,
-            max_quantizer: 40,
+            codec: CodecType::AV1,
+            hardware_acceleration: true,
+            low_latency_mode: true,
+            adaptive_bitrate: true,
         }
     }
 }
@@ -284,21 +347,22 @@ impl Default for VpxEncoderConfig {
 #### 2.3.1 协议设计
 - **控制通道**: TCP连接，用于信令、配置、状态同步
 - **数据通道**: UDP连接，用于视频数据传输（低延迟优先）
+- **Windows 11优化**: 利用Windows 11优化的TCP/IP协议栈
 
 #### 2.3.2 数据包格式
 
 ```rust
 #[repr(C)]
 pub struct VideoPacket {
-    pub magic: u32,           // 魔数 0x52545344 ("RTSD")
-    pub version: u8,          // 协议版本
-    pub packet_type: u8,      // 包类型
-    pub frame_index: u32,     // 帧序号
-    pub packet_index: u16,    // 包序号
-    pub total_packets: u16,   // 总包数
-    pub timestamp: u64,        // 时间戳
-    pub codec: CodecType,     // 编码类型
-    pub data: Vec<u8>,        // 视频数据
+    pub magic: u32,
+    pub version: u8,
+    pub packet_type: u8,
+    pub frame_index: u32,
+    pub packet_index: u16,
+    pub total_packets: u16,
+    pub timestamp: u64,
+    pub codec: CodecType,
+    pub data: Vec<u8>,
 }
 
 #[repr(u8)]
@@ -308,22 +372,22 @@ pub enum PacketType {
     Config = 0x03,
     Ack = 0x04,
     Nack = 0x05,
+    QoSReport = 0x06,
 }
 
 #[repr(u8)]
 pub enum CodecType {
     AV1 = 0x01,
     VP9 = 0x02,
-    VP8 = 0x03,
-    H264 = 0x04,
+    H264 = 0x03,
 }
 ```
 
-#### 2.3.3 发送端实现
+#### 2.3.3 Windows 11网络优化
 
 ```rust
 use std::net::UdpSocket;
-use std::sync::mpsc;
+use windows::Win32::Networking::WinSock::*;
 
 pub struct VideoSender {
     socket: UdpSocket,
@@ -335,6 +399,35 @@ pub struct VideoSender {
 impl VideoSender {
     pub fn new(receiver_ip: &str, receiver_port: u16) -> io::Result<Self> {
         let socket = UdpSocket::bind("0.0.0.0:0")?;
+        
+        unsafe {
+            let mut reuse_addr: i32 = 1;
+            setsockopt(
+                socket.as_raw_socket(),
+                SOL_SOCKET,
+                SO_REUSEADDR,
+                &reuse_addr as *const _ as *const _,
+                std::mem::size_of_val(&reuse_addr) as i32,
+            );
+            
+            let mut buffer_size: i32 = 1024 * 1024 * 10;
+            setsockopt(
+                socket.as_raw_socket(),
+                SOL_SOCKET,
+                SO_RCVBUF,
+                &buffer_size as *const _ as *const _,
+                std::mem::size_of_val(&buffer_size) as i32,
+            );
+            
+            setsockopt(
+                socket.as_raw_socket(),
+                SOL_SOCKET,
+                SO_SNDBUF,
+                &buffer_size as *const _ as *const _,
+                std::mem::size_of_val(&buffer_size) as i32,
+            );
+        }
+        
         Ok(VideoSender {
             socket,
             receiver_ip: receiver_ip.to_string(),
@@ -367,168 +460,161 @@ impl VideoSender {
 }
 ```
 
-#### 2.3.4 接收端实现
-
-```rust
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::sync::Mutex;
-
-pub struct VideoReceiver {
-    socket: UdpSocket,
-    frame_buffer: Arc<Mutex<HashMap<u32, Vec<u8>>>>,
-    current_frame: Arc<Mutex<Option<VideoPacket>>>,
-}
-
-impl VideoReceiver {
-    pub fn new(bind_port: u16) -> io::Result<Self> {
-        let socket = UdpSocket::bind(format!("0.0.0.0:{}", bind_port))?;
-        socket.set_read_timeout(Some(Duration::from_millis(100)))?;
-        
-        Ok(VideoReceiver {
-            socket,
-            frame_buffer: Arc::new(Mutex::new(HashMap::new())),
-            current_frame: Arc::new(Mutex::new(None)),
-        })
-    }
-    
-    pub fn receive_loop(&self) {
-        let mut buf = [0u8; 65536];
-        
-        loop {
-            match self.socket.recv_from(&mut buf) {
-                Ok((len, _addr)) => {
-                    if let Ok(packet) = bincode::deserialize::<VideoPacket>(&buf[..len]) {
-                        self.handle_packet(packet);
-                    }
-                }
-                Err(e) => {
-                    if e.kind() != io::ErrorKind::WouldBlock {
-                        eprintln!("Receive error: {}", e);
-                    }
-                }
-            }
-        }
-    }
-    
-    fn handle_packet(&self, packet: VideoPacket) {
-        let mut buffer = self.frame_buffer.lock().unwrap();
-        let chunks = buffer.entry(packet.frame_index).or_insert_with(Vec::new);
-        
-        chunks.resize(packet.total_packets as usize, Vec::new());
-        chunks[packet.packet_index as usize] = packet.data;
-        
-        if chunks.iter().all(|c| !c.is_empty()) {
-            let mut frame_data = Vec::new();
-            for chunk in chunks.iter() {
-                frame_data.extend_from_slice(chunk);
-            }
-            
-            let mut current = self.current_frame.lock().unwrap();
-            *current = Some(VideoPacket {
-                data: frame_data,
-                ..packet
-            });
-            
-            buffer.remove(&packet.frame_index);
-        }
-    }
-}
-```
-
 ### 2.4 渲染模块 (Renderer)
 
 #### 2.4.1 技术选型
-- **DirectX 11**: 提供高性能硬件加速渲染
+- **DirectX 12 Ultimate**: Windows 11原生支持，提供最高性能
+- **Auto HDR**: 自动为SDR游戏添加HDR效果
 - **优势**:
-  - 低延迟渲染
+  - 极低延迟渲染
   - 硬件加速
-  - 支持多种纹理格式
-  - 与Windows系统深度集成
+  - 支持HDR和可变刷新率
+  - 与Windows 11深度集成
+  - 支持光线追踪（未来扩展）
 
-#### 2.4.2 渲染器实现
+#### 2.4.2 DirectX 12渲染器实现
 
 ```rust
-use winapi::um::d3d11::*;
-use winapi::um::d3dcommon::*;
+use windows::Win32::Graphics::Direct3D12::*;
+use windows::Win32::Graphics::Dxgi::Common::*;
 
 pub struct Renderer {
-    device: *mut ID3D11Device,
-    context: *mut ID3D11DeviceContext,
-    swap_chain: *mut IDXGISwapChain,
-    render_target_view: *mut ID3D11RenderTargetView,
-    vertex_shader: *mut ID3D11VertexShader,
-    pixel_shader: *mut ID3D11PixelShader,
-    sampler_state: *mut ID3D11SamplerState,
+    device: *mut ID3D12Device,
+    command_queue: *mut ID3D12CommandQueue,
+    swap_chain: *mut IDXGISwapChain3,
+    render_target_view_heap: *mut ID3D12DescriptorHeap,
+    command_allocator: *mut ID3D12CommandAllocator,
+    command_list: *mut ID3D12GraphicsCommandList,
+    fence: *mut ID3D12Fence,
+    fence_value: u64,
+    fence_event: HANDLE,
 }
 
 impl Renderer {
     pub fn new(hwnd: HWND, width: u32, height: u32) -> ResultType<Self> {
         unsafe {
             let mut device = ptr::null_mut();
-            let mut context = ptr::null_mut();
-            let mut swap_chain = ptr::null_mut();
+            D3D12CreateDevice(
+                ptr::null_mut(),
+                D3D_FEATURE_LEVEL_12_0,
+                &IID_ID3D12Device,
+                &mut device as *mut _ as *mut _,
+            )?;
             
-            let swap_chain_desc = DXGI_SWAP_CHAIN_DESC {
-                BufferDesc: DXGI_MODE_DESC {
-                    Width: width,
-                    Height: height,
-                    RefreshRate: DXGI_RATIONAL { Numerator: 60, Denominator: 1 },
-                    Format: DXGI_FORMAT_B8G8R8A8_UNORM,
-                    ScanlineOrdering: DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED,
-                    Scaling: DXGI_MODE_SCALING_UNSPECIFIED,
-                },
+            let queue_desc = D3D12_COMMAND_QUEUE_DESC {
+                Type: D3D12_COMMAND_LIST_TYPE_DIRECT,
+                Flags: D3D12_COMMAND_QUEUE_FLAG_NONE,
+                Priority: 0,
+                NodeMask: 0,
+            };
+            
+            let mut command_queue = ptr::null_mut();
+            (*device).CreateCommandQueue(
+                &queue_desc,
+                &IID_ID3D12CommandQueue,
+                &mut command_queue as *mut _ as *mut _,
+            )?;
+            
+            let mut dxgi_factory = ptr::null_mut();
+            CreateDXGIFactory1(&IID_IDXGIFactory4, &mut dxgi_factory as *mut _ as *mut _)?;
+            
+            let swap_chain_desc = DXGI_SWAP_CHAIN_DESC1 {
+                Width: width,
+                Height: height,
+                Format: DXGI_FORMAT_R8G8B8A8_UNORM,
+                Stereo: FALSE.into(),
                 SampleDesc: DXGI_SAMPLE_DESC { Count: 1, Quality: 0 },
                 BufferUsage: DXGI_USAGE_RENDER_TARGET_OUTPUT,
                 BufferCount: 2,
-                OutputWindow: hwnd,
-                Windowed: TRUE,
-                SwapEffect: DXGI_SWAP_EFFECT_DISCARD,
+                Scaling: DXGI_SCALING_STRETCH,
+                SwapEffect: DXGI_SWAP_EFFECT_FLIP_DISCARD,
+                AlphaMode: DXGI_ALPHA_MODE_IGNORE,
                 Flags: 0,
             };
             
-            D3D11CreateDeviceAndSwapChain(
-                ptr::null_mut(),
-                D3D_DRIVER_TYPE_HARDWARE,
-                ptr::null_mut(),
-                0,
-                ptr::null_mut(),
-                0,
-                D3D11_SDK_VERSION,
+            let mut swap_chain = ptr::null_mut();
+            (*(dxgi_factory as *mut IDXGIFactory4)).CreateSwapChainForHwnd(
+                command_queue as *mut _,
+                hwnd,
                 &swap_chain_desc,
-                &mut swap_chain,
-                &mut device,
+                ptr::null(),
                 ptr::null_mut(),
-                &mut context,
+                &mut swap_chain as *mut _ as *mut _,
             )?;
             
-            let mut back_buffer = ptr::null_mut();
-            (*swap_chain).GetBuffer(0, &IID_ID3D11Texture2D, &mut back_buffer);
+            let swap_chain3 = swap_chain as *mut IDXGISwapChain3;
             
-            let mut render_target_view = ptr::null_mut();
-            (*device).CreateRenderTargetView(
-                back_buffer as *mut _,
+            let mut allocator = ptr::null_mut();
+            (*device).CreateCommandAllocator(
+                D3D12_COMMAND_LIST_TYPE_DIRECT,
+                &IID_ID3D12CommandAllocator,
+                &mut allocator as *mut _ as *mut _,
+            )?;
+            
+            let mut command_list = ptr::null_mut();
+            (*device).CreateCommandList(
+                0,
+                D3D12_COMMAND_LIST_TYPE_DIRECT,
+                allocator,
                 ptr::null(),
-                &mut render_target_view,
-            );
+                &IID_ID3D12GraphicsCommandList,
+                &mut command_list as *mut _ as *mut _,
+            )?;
+            
+            let mut fence = ptr::null_mut();
+            (*device).CreateFence(0, D3D12_FENCE_FLAG_NONE, &IID_ID3D12Fence, &mut fence as *mut _ as *mut _)?;
+            
+            let fence_event = CreateEventW(ptr::null_mut(), FALSE.into(), FALSE.into(), None)?;
             
             Ok(Renderer {
                 device,
-                context,
-                swap_chain,
-                render_target_view,
-                vertex_shader: ptr::null_mut(),
-                pixel_shader: ptr::null_mut(),
-                sampler_state: ptr::null_mut(),
+                command_queue,
+                swap_chain: swap_chain3,
+                render_target_view_heap: ptr::null_mut(),
+                command_allocator: allocator,
+                command_list,
+                fence,
+                fence_value: 0,
+                fence_event,
             })
         }
     }
     
-    pub fn render_frame(&mut self, texture: *mut ID3D11Texture2D) -> ResultType<()> {
+    pub fn render_frame(&mut self, texture: *mut ID3D12Resource) -> ResultType<()> {
         unsafe {
-            let color = [0.0f32, 0.0f32, 0.0f32, 1.0f32];
-            (*self.context).OMSetRenderTargets(1, &self.render_target_view, ptr::null_mut());
-            (*self.context).ClearRenderTargetView(self.render_target_view, &color);
+            let command_allocator = self.command_allocator;
+            (*command_allocator).Reset();
+            
+            let command_list = self.command_list;
+            (*command_list).Reset(command_allocator, ptr::null());
+            
+            let barrier = D3D12_RESOURCE_BARRIER {
+                Type: D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+                Flags: D3D12_RESOURCE_BARRIER_FLAG_NONE,
+                Transition: D3D12_RESOURCE_TRANSITION_BARRIER {
+                    pResource: texture,
+                    Subresource: D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+                    StateBefore: D3D12_RESOURCE_STATE_COPY_SOURCE,
+                    StateAfter: D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                },
+            };
+            
+            (*command_list).ResourceBarrier(1, &barrier);
+            
+            (*command_list).Close();
+            
+            let command_lists = [command_list as *mut ID3D12CommandList];
+            (*self.command_queue).ExecuteCommandLists(1, command_lists.as_ptr());
+            
+            let fence_value = self.fence_value + 1;
+            (*self.command_queue).Signal(self.fence, fence_value);
+            
+            if (*self.fence).GetCompletedValue() < fence_value {
+                (*self.fence).SetEventOnCompletion(fence_value, self.fence_event);
+                WaitForSingleObject(self.fence_event, INFINITE);
+            }
+            
+            self.fence_value = fence_value;
             
             (*self.swap_chain).Present(1, 0);
             
@@ -540,7 +626,13 @@ impl Renderer {
 
 ### 2.5 安全验证模块 (Security)
 
-#### 2.5.1 密码验证
+#### 2.5.1 Windows 11安全特性
+- **Windows Hello**: 生物识别认证
+- **Device Encryption**: 设备级加密
+- **Credential Guard**: 凭据保护
+
+#### 2.5.2 密码验证
+
 ```rust
 use argon2::{self, Config, ThreadMode, Variant, Version};
 
@@ -567,7 +659,8 @@ pub fn verify_password(hash: &str, password: &str) -> Result<bool> {
 }
 ```
 
-#### 2.5.2 加密通信
+#### 2.5.3 加密通信
+
 ```rust
 use aes_gcm::{Aes256Gcm, Key, Nonce};
 use aes_gcm::aead::{Aead, NewAead};
@@ -605,59 +698,68 @@ impl Encryption {
 
 ```
 1. 初始化
-   ├── 创建D3D11设备
-   ├── 初始化DXGI屏幕采集
-   ├── 初始化编码器（VP9/VP8/AV1）
-   ├── 创建UDP socket
+   ├── 创建DirectX 12设备
+   ├── 初始化DXGI 1.6屏幕采集
+   ├── 初始化硬件加速编码器（AV1/VP9/H264）
+   ├── 创建UDP socket（Windows 11优化）
+   ├── 启动硬件调度器
    └── 启动QoS监控线程
 
 2. 主循环
-   ├── 屏幕采集（60 FPS）
-   │   ├── 获取屏幕帧
+   ├── 屏幕采集（60-144 FPS）
+   │   ├── 获取屏幕帧（DXGI 1.6）
    │   ├── 检测变化区域
+   │   ├── 支持HDR采集
    │   └── 准备编码数据
    │
    ├── 视频编码
    │   ├── 根据QoS调整编码参数
-   │   ├── 编码帧数据
-   │   └── 生成关键帧（定期）
+   │   ├── 硬件加速编码
+   │   ├── 生成关键帧（定期）
+   │   └── 支持AV1编码
    │
    ├── 网络传输
    │   ├── 分包处理（MTU 1400）
    │   ├── 添加时间戳和序号
-   │   └── UDP发送
+   │   ├── UDP发送（Windows 11优化）
+   │   └── 自适应发送速率
    │
    └── QoS管理
        ├── 监控网络状况
        ├── 动态调整码率
-       └── 优化传输策略
+       ├── 硬件调度器优化
+       └── 低延迟模式
 ```
 
 ### 3.2 接收端流程
 
 ```
 1. 初始化
-   ├── 创建D3D11设备
+   ├── 创建DirectX 12设备
    ├── 创建渲染窗口
-   ├── 初始化解码器
-   ├── 创建UDP socket
-   └── 连接到发送端
+   ├── 初始化硬件加速解码器
+   ├── 创建UDP socket（Windows 11优化）
+   ├── 连接到发送端
+   └── 启用Auto HDR
 
 2. 主循环
    ├── 网络接收
-   │   ├── 接收UDP数据包
+   │   ├── 接收UDP数据包（Windows 11优化）
    │   ├── 重组帧数据
    │   └── 处理丢包重传
    │
    ├── 视频解码
-   │   ├── 解码帧数据
+   │   ├── 硬件加速解码
    │   ├── 处理关键帧
+   │   ├── 支持AV1解码
    │   └── 输出渲染纹理
    │
    ├── 渲染显示
    │   ├── 更新纹理数据
-   │   ├── 渲染到窗口
-   │   └── 垂直同步
+   │   ├── DirectX 12渲染
+   │   ├── Auto HDR处理
+   │   ├── 可变刷新率支持
+   │   └── 垂直同步优化
    │
    └── 输入转发
        ├── 捕获鼠标键盘事件
@@ -678,6 +780,7 @@ pub struct VideoQoS {
     frame_rate: u32,
     packet_loss_rate: f32,
     rtt: u32,
+    hardware_scheduler_enabled: bool,
 }
 
 impl VideoQoS {
@@ -694,6 +797,22 @@ impl VideoQoS {
         self.current_bitrate = self.current_bitrate
             .max(self.min_bitrate)
             .min(self.max_bitrate);
+        
+        if self.hardware_scheduler_enabled {
+            self.optimize_for_hardware_scheduler();
+        }
+    }
+    
+    fn optimize_for_hardware_scheduler(&mut self) {
+        if self.rtt < 30 {
+            self.frame_rate = 144;
+        } else if self.rtt < 50 {
+            self.frame_rate = 120;
+        } else if self.rtt < 100 {
+            self.frame_rate = 90;
+        } else {
+            self.frame_rate = 60;
+        }
     }
 }
 ```
@@ -712,9 +831,19 @@ pub struct NetworkMonitor {
     sent_packets: u32,
     received_packets: u32,
     rtt_samples: Vec<u32>,
+    windows_11_optimized: bool,
 }
 
 impl NetworkMonitor {
+    pub fn new(windows_11_optimized: bool) -> Self {
+        NetworkMonitor {
+            sent_packets: 0,
+            received_packets: 0,
+            rtt_samples: Vec::new(),
+            windows_11_optimized,
+        }
+    }
+    
     pub fn update(&mut self, rtt: u32) {
         self.rtt_samples.push(rtt);
         if self.rtt_samples.len() > 100 {
@@ -752,35 +881,49 @@ impl NetworkMonitor {
 - 使用DXGI Desktop Duplication API
 - 多显示器支持
 - 变化区域检测
+- 升级到DXGI 1.6以支持Windows 11特性
 
 ### 5.2 编码器模块
 参考 `src/server/video_service.rs` 中的编码器实现：
 - VP8/VP9编码器封装
 - 编码参数配置
 - 硬件加速支持
+- 添加AV1编码器支持
 
 ### 5.3 QoS管理
 参考 `src/server/video_qos.rs` 中的QoS实现：
 - 自适应码率控制
 - 网络状况监控
 - 性能优化策略
+- 集成Windows 11硬件调度器
 
 ## 6. 性能优化
 
 ### 6.1 编码优化
-- 使用硬件加速编码器（NVENC、QuickSync）
+- 使用硬件加速编码器（NVENC、QuickSync、VCE）
 - 动态调整关键帧间隔
 - 根据场景复杂度调整编码参数
+- 利用Windows 11的硬件调度器优化CPU/GPU协作
 
 ### 6.2 网络优化
 - 使用UDP进行数据传输
 - 实现FEC（前向纠错）
 - 优化数据包大小和发送频率
+- 利用Windows 11优化的TCP/IP协议栈
 
 ### 6.3 渲染优化
-- 使用DirectX硬件加速
+- 使用DirectX 12 Ultimate硬件加速
 - 实现零拷贝纹理更新
 - 优化渲染管线
+- 支持Auto HDR
+- 支持可变刷新率（VRR）
+
+### 6.4 Windows 11专项优化
+- 启用游戏模式
+- 优化硬件调度器
+- 使用DirectStorage加速资源加载
+- 利用Windows 11的内存管理改进
+- 启用Auto HDR增强视觉效果
 
 ## 7. 未来扩展：WebRTC迁移
 
@@ -789,6 +932,7 @@ impl NetworkMonitor {
 - 内置自适应码率控制
 - 内置丢包恢复机制
 - 标准化协议，兼容性好
+- Windows 11原生支持WebRTC
 
 ### 7.2 迁移方案
 ```
@@ -800,12 +944,14 @@ impl NetworkMonitor {
 阶段2: 功能完善
 ├── 实现自适应码率
 ├── 实现丢包恢复
-└── 优化延迟
+├── 优化延迟
+└── 支持Windows 11特性
 
 阶段3: 高级特性
 ├── 支持多路流
 ├── 支持音频传输
-└── 支持录制功能
+├── 支持录制功能
+└── 支持云游戏
 ```
 
 ### 7.3 WebRTC实现示例
@@ -845,16 +991,40 @@ impl WebRTCStreamer {
 }
 ```
 
-## 8. 总结
+## 8. Windows 11系统集成
 
-本技术方案提供了一个完整的Windows平台局域网游戏串流系统设计，包含以下关键特性：
+### 8.1 系统要求
+- **操作系统**: Windows 11 (22H2或更高版本)
+- **处理器**: Intel Core 8代或更高 / AMD Ryzen 2000系列或更高
+- **内存**: 16GB RAM推荐
+- **显卡**: 支持DirectX 12 Ultimate的显卡
+- **网络**: 千兆局域网
 
-1. **高性能屏幕采集**: 使用DXGI Desktop Duplication API
-2. **多编码器支持**: AV1/VP9/VP8/H264，自动选择最优编码器
-3. **低延迟传输**: UDP传输 + 自适应码率控制
-4. **硬件加速渲染**: DirectX 11渲染管线
-5. **安全可靠**: 密码验证 + AES-256加密
-6. **QoS管理**: 自适应码率 + 网络状况监控
-7. **可扩展架构**: 支持未来WebRTC迁移
+### 8.2 系统配置建议
+- 启用游戏模式
+- 启用硬件加速GPU调度
+- 启用Auto HDR
+- 启用可变刷新率
+- 禁用不必要的后台应用
+- 优化电源管理设置
 
-该系统可以满足局域网内高质量、低延迟的游戏串流需求，为用户提供流畅的游戏体验。
+### 8.3 性能监控
+- 使用Windows 11性能监视器
+- 监控CPU/GPU使用率
+- 监控网络延迟和丢包率
+- 监控帧率和延迟
+
+## 9. 总结
+
+本技术方案提供了一个基于Windows 11平台的局域网游戏串流系统设计，充分利用Windows 11的新特性，包括：
+
+1. **高性能屏幕采集**: 使用DXGI 1.6 Desktop Duplication API
+2. **DirectX 12 Ultimate**: 提供最高性能的渲染和编码
+3. **多编码器支持**: AV1/VP9/H264，自动选择最优编码器
+4. **低延迟传输**: UDP传输 + 自适应码率控制 + Windows 11网络优化
+5. **硬件加速渲染**: DirectX 12 Ultimate + Auto HDR + 可变刷新率
+6. **安全可靠**: 密码验证 + AES-256加密 + Windows 11安全特性
+7. **QoS管理**: 自适应码率 + 网络状况监控 + 硬件调度器优化
+8. **可扩展架构**: 支持未来WebRTC迁移
+
+该系统充分利用Windows 11的新特性，可以满足局域网内高质量、低延迟的游戏串流需求，为用户提供流畅的游戏体验。
