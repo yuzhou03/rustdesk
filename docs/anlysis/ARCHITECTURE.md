@@ -51,21 +51,21 @@ rustdesk/
 
 | 文件 | 功能描述 |
 |------|----------|
-| [main.rs](file:///home/zy/repo/rustdesk/src/main.rs) | 程序入口，处理不同平台的启动逻辑 |
-| [lib.rs](file:///home/zy/repo/rustdesk/src/lib.rs) | 定义库接口和公共导出 |
-| [core_main.rs](file:///home/zy/repo/rustdesk/src/core_main.rs) | 核心初始化和主流程控制 |
-| [common.rs](file:///home/zy/repo/rustdesk/src/common.rs) | 公共功能集合 |
+| [main.rs](../../src/main.rs) | 程序入口，处理不同平台的启动逻辑 |
+| [lib.rs](../../src/lib.rs) | 定义库接口和公共导出 |
+| [core_main.rs](../../src/core_main.rs) | 核心初始化和主流程控制 |
+| [common.rs](../../src/common.rs) | 公共功能集合 |
 
 #### 2.2.2 客户端模块
 
 | 文件/目录 | 功能描述 |
 |-----------|----------|
-| [client.rs](file:///home/zy/repo/rustdesk/src/client.rs) | 客户端主逻辑 |
-| [client/](file:///home/zy/repo/rustdesk/src/client/) | 客户端子模块目录 |
-| [client/io_loop.rs](file:///home/zy/repo/rustdesk/src/client/io_loop.rs) | IO 事件循环 |
-| [client/file_trait.rs](file:///home/zy/repo/rustdesk/src/client/file_trait.rs) | 文件传输接口 |
-| [client/screenshot.rs](file:///home/zy/repo/rustdesk/src/client/screenshot.rs) | 截图功能 |
-| [client/helper.rs](file:///home/zy/repo/rustdesk/src/client/helper.rs) | 客户端辅助函数 |
+| [client.rs](../../src/client.rs) | 客户端主逻辑 |
+| [client/](../../src/client/) | 客户端子模块目录 |
+| [client/io_loop.rs](../../src/client/io_loop.rs) | IO 事件循环 |
+| [client/file_trait.rs](../../src/client/file_trait.rs) | 文件传输接口 |
+| [client/screenshot.rs](../../src/client/screenshot.rs) | 截图功能 |
+| [client/helper.rs](../../src/client/helper.rs) | 客户端辅助函数 |
 
 #### 2.2.3 服务端模块 (server/)
 
@@ -73,32 +73,32 @@ rustdesk/
 
 | 文件 | 功能描述 |
 |------|----------|
-| [server.rs](file:///home/zy/repo/rustdesk/src/server.rs) | 服务端主入口 |
-| [server/connection.rs](file:///home/zy/repo/rustdesk/src/server/connection.rs) | 连接管理 |
-| [server/input_service.rs](file:///home/zy/repo/rustdesk/src/server/input_service.rs) | 输入事件处理服务 |
-| [server/display_service.rs](file:///home/zy/repo/rustdesk/src/server/display_service.rs) | 显示服务 |
-| [server/audio_service.rs](file:///home/zy/repo/rustdesk/src/server/audio_service.rs) | 音频传输服务 |
-| [server/clipboard_service.rs](file:///home/zy/repo/rustdesk/src/server/clipboard_service.rs) | 剪贴板同步服务 |
-| [server/video_service.rs](file:///home/zy/repo/rustdesk/src/server/video_service.rs) | 视频流服务 |
-| [server/printer_service.rs](file:///home/zy/repo/rustdesk/src/server/printer_service.rs) | 远程打印服务 |
-| [server/terminal_service.rs](file:///home/zy/repo/rustdesk/src/server/terminal_service.rs) | 终端仿真服务 |
-| [server/dbus.rs](file:///home/zy/repo/rustdesk/src/server/dbus.rs) | D-Bus 服务（Linux） |
-| [server/uinput.rs](file:///home/zy/repo/rustdesk/src/server/uinput.rs) | uinput 设备支持（Linux） |
-| [server/portable_service.rs](file:///home/zy/repo/rustdesk/src/server/portable_service.rs) | 便携模式服务 |
-| [server/rdp_input.rs](file:///home/zy/repo/rustdesk/src/server/rdp_input.rs) | RDP 输入处理 |
-| [server/wayland.rs](file:///home/zy/repo/rustdesk/src/server/wayland.rs) | Wayland 协议支持 |
-| [server/video_qos.rs](file:///home/zy/repo/rustdesk/src/server/video_qos.rs) | 视频质量控制 |
+| [server.rs](../../src/server.rs) | 服务端主入口 |
+| [server/connection.rs](../../src/server/connection.rs) | 连接管理 |
+| [server/input_service.rs](../../src/server/input_service.rs) | 输入事件处理服务 |
+| [server/display_service.rs](../../src/server/display_service.rs) | 显示服务 |
+| [server/audio_service.rs](../../src/server/audio_service.rs) | 音频传输服务 |
+| [server/clipboard_service.rs](../../src/server/clipboard_service.rs) | 剪贴板同步服务 |
+| [server/video_service.rs](../../src/server/video_service.rs) | 视频流服务 |
+| [server/printer_service.rs](../../src/server/printer_service.rs) | 远程打印服务 |
+| [server/terminal_service.rs](../../src/server/terminal_service.rs) | 终端仿真服务 |
+| [server/dbus.rs](../../src/server/dbus.rs) | D-Bus 服务（Linux） |
+| [server/uinput.rs](../../src/server/uinput.rs) | uinput 设备支持（Linux） |
+| [server/portable_service.rs](../../src/server/portable_service.rs) | 便携模式服务 |
+| [server/rdp_input.rs](../../src/server/rdp_input.rs) | RDP 输入处理 |
+| [server/wayland.rs](../../src/server/wayland.rs) | Wayland 协议支持 |
+| [server/video_qos.rs](../../src/server/video_qos.rs) | 视频质量控制 |
 
 #### 2.2.4 UI 模块
 
 | 文件/目录 | 功能描述 |
 |-----------|----------|
-| [ui.rs](file:///home/zy/repo/rustdesk/src/ui.rs) | UI 主模块 |
-| [ui/](file:///home/zy/repo/rustdesk/src/ui/) | UI 组件目录 |
-| [ui/remote.rs](file:///home/zy/repo/rustdesk/src/ui/remote.rs) | 远程桌面 UI |
-| [ui/cm.rs](file:///home/zy/repo/rustdesk/src/ui/cm.rs) | 连接管理 UI |
-| [ui_cm_interface.rs](file:///home/zy/repo/rustdesk/src/ui_cm_interface.rs) | 连接管理界面接口 |
-| [ui_session_interface.rs](file:///home/zy/repo/rustdesk/src/ui_session_interface.rs) | 会话界面接口 |
+| [ui.rs](../../src/ui.rs) | UI 主模块 |
+| [ui/](../../src/ui/) | UI 组件目录 |
+| [ui/remote.rs](../../src/ui/remote.rs) | 远程桌面 UI |
+| [ui/cm.rs](../../src/ui/cm.rs) | 连接管理 UI |
+| [ui_cm_interface.rs](../../src/ui_cm_interface.rs) | 连接管理界面接口 |
+| [ui_session_interface.rs](../../src/ui_session_interface.rs) | 会话界面接口 |
 
 #### 2.2.5 平台模块 (platform/)
 
@@ -106,24 +106,24 @@ rustdesk/
 
 | 文件 | 功能描述 |
 |------|----------|
-| [platform/mod.rs](file:///home/zy/repo/rustdesk/src/platform/mod.rs) | 平台模块入口 |
-| [platform/windows.rs](file:///home/zy/repo/rustdesk/src/platform/windows.rs) | Windows 平台实现 |
-| [platform/macos.rs](file:///home/zy/repo/rustdesk/src/platform/macos.rs) | macOS 平台实现 |
-| [platform/linux.rs](file:///home/zy/repo/rustdesk/src/platform/linux.rs) | Linux 平台实现 |
-| [platform/win_device.rs](file:///home/zy/repo/rustdesk/src/platform/win_device.rs) | Windows 设备管理 |
-| [platform/gtk_sudo.rs](file:///home/zy/repo/rustdesk/src/platform/gtk_sudo.rs) | GTK sudo 认证 |
-| [platform/linux_desktop_manager.rs](file:///home/zy/repo/rustdesk/src/platform/linux_desktop_manager.rs) | Linux 桌面管理 |
-| [platform/delegate.rs](file:///home/zy/repo/rustdesk/src/platform/delegate.rs) | 委托处理 |
+| [platform/mod.rs](../../src/platform/mod.rs) | 平台模块入口 |
+| [platform/windows.rs](../../src/platform/windows.rs) | Windows 平台实现 |
+| [platform/macos.rs](../../src/platform/macos.rs) | macOS 平台实现 |
+| [platform/linux.rs](../../src/platform/linux.rs) | Linux 平台实现 |
+| [platform/win_device.rs](../../src/platform/win_device.rs) | Windows 设备管理 |
+| [platform/gtk_sudo.rs](../../src/platform/gtk_sudo.rs) | GTK sudo 认证 |
+| [platform/linux_desktop_manager.rs](../../src/platform/linux_desktop_manager.rs) | Linux 桌面管理 |
+| [platform/delegate.rs](../../src/platform/delegate.rs) | 委托处理 |
 
 #### 2.2.6 通信模块
 
 | 文件/目录 | 功能描述 |
 |-----------|----------|
-| [rendezvous_mediator.rs](file:///home/zy/repo/rustdesk/src/rendezvous_mediator.rs) | Rendezvous 中继服务 |
-| [hbbs_http/](file:///home/zy/repo/rustdesk/src/hbbs_http/) | HBBS HTTP 通信模块 |
-| [ipc.rs](file:///home/zy/repo/rustdesk/src/ipc.rs) | 进程间通信 |
-| [kcp_stream.rs](file:///home/zy/repo/rustdesk/src/kcp_stream.rs) | KCP 协议流处理 |
-| [port_forward.rs](file:///home/zy/repo/rustdesk/src/port_forward.rs) | 端口转发功能 |
+| [rendezvous_mediator.rs](../../src/rendezvous_mediator.rs) | Rendezvous 中继服务 |
+| [hbbs_http/](../../src/hbbs_http/) | HBBS HTTP 通信模块 |
+| [ipc.rs](../../src/ipc.rs) | 进程间通信 |
+| [kcp_stream.rs](../../src/kcp_stream.rs) | KCP 协议流处理 |
+| [port_forward.rs](../../src/port_forward.rs) | 端口转发功能 |
 
 #### 2.2.7 白板模块 (whiteboard/)
 
@@ -131,12 +131,12 @@ rustdesk/
 
 | 文件 | 功能描述 |
 |------|----------|
-| [whiteboard/mod.rs](file:///home/zy/repo/rustdesk/src/whiteboard/mod.rs) | 白板模块入口 |
-| [whiteboard/client.rs](file:///home/zy/repo/rustdesk/src/whiteboard/client.rs) | 白板客户端 |
-| [whiteboard/server.rs](file:///home/zy/repo/rustdesk/src/whiteboard/server.rs) | 白板服务端 |
-| [whiteboard/windows.rs](file:///home/zy/repo/rustdesk/src/whiteboard/windows.rs) | Windows 平台实现 |
-| [whiteboard/macos.rs](file:///home/zy/repo/rustdesk/src/whiteboard/macos.rs) | macOS 平台实现 |
-| [whiteboard/linux.rs](file:///home/zy/repo/rustdesk/src/whiteboard/linux.rs) | Linux 平台实现 |
+| [whiteboard/mod.rs](../../src/whiteboard/mod.rs) | 白板模块入口 |
+| [whiteboard/client.rs](../../src/whiteboard/client.rs) | 白板客户端 |
+| [whiteboard/server.rs](../../src/whiteboard/server.rs) | 白板服务端 |
+| [whiteboard/windows.rs](../../src/whiteboard/windows.rs) | Windows 平台实现 |
+| [whiteboard/macos.rs](../../src/whiteboard/macos.rs) | macOS 平台实现 |
+| [whiteboard/linux.rs](../../src/whiteboard/linux.rs) | Linux 平台实现 |
 
 #### 2.2.8 隐私模式模块 (privacy_mode/)
 
@@ -144,12 +144,12 @@ rustdesk/
 
 | 文件 | 功能描述 |
 |------|----------|
-| [privacy_mode.rs](file:///home/zy/repo/rustdesk/src/privacy_mode.rs) | 隐私模式主模块 |
-| [privacy_mode/win_virtual_display.rs](file:///home/zy/repo/rustdesk/src/privacy_mode/win_virtual_display.rs) | Windows 虚拟显示 |
-| [privacy_mode/win_exclude_from_capture.rs](file:///home/zy/repo/rustdesk/src/privacy_mode/win_exclude_from_capture.rs) | 捕获排除功能 |
-| [privacy_mode/win_topmost_window.rs](file:///home/zy/repo/rustdesk/src/privacy_mode/win_topmost_window.rs) | 最顶层窗口 |
-| [privacy_mode/win_input.rs](file:///home/zy/repo/rustdesk/src/privacy_mode/win_input.rs) | 输入控制 |
-| [privacy_mode/win_mag.rs](file:///home/zy/repo/rustdesk/src/privacy_mode/win_mag.rs) | MAG 滤镜 |
+| [privacy_mode.rs](../../src/privacy_mode.rs) | 隐私模式主模块 |
+| [privacy_mode/win_virtual_display.rs](../../src/privacy_mode/win_virtual_display.rs) | Windows 虚拟显示 |
+| [privacy_mode/win_exclude_from_capture.rs](../../src/privacy_mode/win_exclude_from_capture.rs) | 捕获排除功能 |
+| [privacy_mode/win_topmost_window.rs](../../src/privacy_mode/win_topmost_window.rs) | 最顶层窗口 |
+| [privacy_mode/win_input.rs](../../src/privacy_mode/win_input.rs) | 输入控制 |
+| [privacy_mode/win_mag.rs](../../src/privacy_mode/win_mag.rs) | MAG 滤镜 |
 
 #### 2.2.9 插件模块 (plugin/)
 
@@ -157,48 +157,48 @@ rustdesk/
 
 | 文件 | 功能描述 |
 |------|----------|
-| [plugin/mod.rs](file:///home/zy/repo/rustdesk/src/plugin/mod.rs) | 插件模块入口 |
-| [plugin/manager.rs](file:///home/zy/repo/rustdesk/src/plugin/manager.rs) | 插件管理器 |
-| [plugin/config.rs](file:///home/zy/repo/rustdesk/src/plugin/config.rs) | 插件配置 |
-| [plugin/native.rs](file:///home/zy/repo/rustdesk/src/plugin/native.rs) | 原生插件接口 |
-| [plugin/ipc.rs](file:///home/zy/repo/rustdesk/src/plugin/ipc.rs) | 插件 IPC |
-| [plugin/native_handlers/](file:///home/zy/repo/rustdesk/src/plugin/native_handlers/) | 原生处理器 |
+| [plugin/mod.rs](../../src/plugin/mod.rs) | 插件模块入口 |
+| [plugin/manager.rs](../../src/plugin/manager.rs) | 插件管理器 |
+| [plugin/config.rs](../../src/plugin/config.rs) | 插件配置 |
+| [plugin/native.rs](../../src/plugin/native.rs) | 原生插件接口 |
+| [plugin/ipc.rs](../../src/plugin/ipc.rs) | 插件 IPC |
+| [plugin/native_handlers/](../../src/plugin/native_handlers/) | 原生处理器 |
 
 #### 2.2.10 其他功能模块
 
 | 文件 | 功能描述 |
 |------|----------|
-| [keyboard.rs](file:///home/zy/repo/rustdesk/src/keyboard.rs) | 键盘映射和处理 |
-| [clipboard.rs](file:///home/zy/repo/rustdesk/src/clipboard.rs) | 剪贴板管理 |
-| [clipboard_file.rs](file:///home/zy/repo/rustdesk/src/clipboard_file.rs) | 剪贴板文件传输 |
-| [auth_2fa.rs](file:///home/zy/repo/rustdesk/src/auth_2fa.rs) | 双因素认证 |
-| [tray.rs](file:///home/zy/repo/rustdesk/src/tray.rs) | 系统托盘 |
-| [service.rs](file:///home/zy/repo/rustdesk/src/service.rs) | 系统服务管理 |
-| [naming.rs](file:///home/zy/repo/rustdesk/src/naming.rs) | ID 命名服务 |
-| [updater.rs](file:///home/zy/repo/rustdesk/src/updater.rs) | 自动更新 |
-| [lan.rs](file:///home/zy/repo/rustdesk/src/lan.rs) | 局域网发现 |
-| [flutter.rs](file:///home/zy/repo/rustdesk/src/flutter.rs) | Flutter flutter_ffi.rs](file:///home集成 |
-| [/zy/repo/rustdesk/src/flutter_ffi.rs) | Flutter FFI 桥接 |
-| [lang.rs](file:///home/zy/repo/rustdesk/src/lang.rs) | 语言管理 |
-| [lang/](file:///home/zy/repo/rustdesk/src/lang/) | 多语言资源（40+ 语言） |
-| [virtual_display_manager.rs](file:///home/zy/repo/rustdesk/src/virtual_display_manager.rs) | 虚拟显示管理 |
-| [custom_server.rs](file:///home/zy/repo/rustdesk/src/custom_server.rs) | 自定义服务器配置 |
+| [keyboard.rs](../../src/keyboard.rs) | 键盘映射和处理 |
+| [clipboard.rs](../../src/clipboard.rs) | 剪贴板管理 |
+| [clipboard_file.rs](../../src/clipboard_file.rs) | 剪贴板文件传输 |
+| [auth_2fa.rs](../../src/auth_2fa.rs) | 双因素认证 |
+| [tray.rs](../../src/tray.rs) | 系统托盘 |
+| [service.rs](../../src/service.rs) | 系统服务管理 |
+| [naming.rs](../../src/naming.rs) | ID 命名服务 |
+| [updater.rs](../../src/updater.rs) | 自动更新 |
+| [lan.rs](../../src/lan.rs) | 局域网发现 |
+| [flutter.rs](../../src/flutter.rs) | Flutter 集成 |
+| [flutter_ffi.rs](../../src/flutter_ffi.rs) | Flutter FFI 桥接 |
+| [lang.rs](../../src/lang.rs) | 语言管理 |
+| [lang/](../../src/lang/) | 多语言资源（40+ 语言） |
+| [virtual_display_manager.rs](../../src/virtual_display_manager.rs) | 虚拟显示管理 |
+| [custom_server.rs](../../src/custom_server.rs) | 自定义服务器配置 |
 
 ### 2.3 公共库模块 (libs/)
 
 #### 2.3.1 scrap - 屏幕捕获库
 
-[scrap](file:///home/zy/repo/rustdesk/libs/scrap) 是一个跨平台屏幕捕获库，支持多种底层图形 API。
+[scrap](../../libs/scrap) 是一个跨平台屏幕捕获库，支持多种底层图形 API。
 
 | 目录/文件 | 平台 | 功能描述 |
 |-----------|------|----------|
-| [src/lib.rs](file:///home/zy/repo/rustdesk/libs/scrap/src/lib.rs) | 通用 | 库入口和公共接口 |
-| [src/common/](file:///home/zy/repo/rustdesk/libs/scrap/src/common/) | 通用 | 公共捕获逻辑 |
-| [src/x11/](file:///home/zy/repo/rustdesk/libs/scrap/src/x11/) | Linux | X11 屏幕捕获 |
-| [src/wayland/](file:///home/zy/repo/rustdesk/libs/scrap/src/wayland/) | Linux | Wayland 屏幕捕获 |
-| [src/quartz/](file:///home/zy/repo/rustdesk/libs/scrap/src/quartz/) | macOS | Quartz 屏幕捕获 |
-| [src/dxgi/](file:///home/zy/repo/rustdesk/libs/scrap/src/dxgi/) | Windows | DirectX GI 捕获 |
-| [src/android/](file:///home/zy/repo/rustdesk/libs/scrap/src/android/) | Android | Android 屏幕捕获 |
+| [src/lib.rs](../../libs/scrap/src/lib.rs) | 通用 | 库入口和公共接口 |
+| [src/common/](../../libs/scrap/src/common/) | 通用 | 公共捕获逻辑 |
+| [src/x11/](../../libs/scrap/src/x11/) | Linux | X11 屏幕捕获 |
+| [src/wayland/](../../libs/scrap/src/wayland/) | Linux | Wayland 屏幕捕获 |
+| [src/quartz/](../../libs/scrap/src/quartz/) | macOS | Quartz 屏幕捕获 |
+| [src/dxgi/](../../libs/scrap/src/dxgi/) | Windows | DirectX GI 捕获 |
+| [src/android/](../../libs/scrap/src/android/) | Android | Android 屏幕捕获 |
 
 **特性支持**：
 - 硬件编解码（hwcodec）
@@ -219,22 +219,22 @@ hbb_common 是项目的公共基础库，提供通用的数据结构和工具函
 
 #### 2.3.3 enigo - 输入模拟库
 
-[enigo](file:///home/zy/repo/rustdesk/libs/enigo) 提供跨平台的鼠标和键盘输入模拟功能。
+[enigo](../../libs/enigo) 提供跨平台的鼠标和键盘输入模拟功能。
 
 | 目录 | 平台 |
 |------|------|
-| [src/win/](file:///home/zy/repo/rustdesk/libs/enigo/src/win/) | Windows |
-| [src/macos/](file:///home/zy/repo/rustdesk/libs/enigo/src/macos/) | macOS |
-| [src/linux/](file:///home/zy/repo/rustdesk/libs/enigo/src/linux/) | Linux |
+| [src/win/](../../libs/enigo/src/win/) | Windows |
+| [src/macos/](../../libs/enigo/src/macos/) | macOS |
+| [src/linux/](../../libs/enigo/src/linux/) | Linux |
 
 #### 2.3.4 clipboard - 剪贴板库
 
-[clipboard](file:///home/zy/repo/rustdesk/libs/clipboard) 提供跨平台的剪贴板访问和文件传输支持。
+[clipboard](../../libs/clipboard) 提供跨平台的剪贴板访问和文件传输支持。
 
 | 目录 | 功能描述 |
 |------|----------|
-| [src/platform/windows.rs](file:///home/zy/repo/rustdesk/libs/clipboard/src/platform/windows.rs) | Windows 剪贴板 |
-| [src/platform/unix/](file:///home/zy/repo/rustdesk/libs/clipboard/src/platform/unix/) | Unix 剪贴板（含 macOS） |
+| [src/platform/windows.rs](../../libs/clipboard/src/platform/windows.rs) | Windows 剪贴板 |
+| [src/platform/unix/](../../libs/clipboard/src/platform/unix/) | Unix 剪贴板（含 macOS） |
 
 **特性**：
 - 文本/图像/文件传输
@@ -243,11 +243,11 @@ hbb_common 是项目的公共基础库，提供通用的数据结构和工具函
 
 #### 2.3.5 virtual_display - 虚拟显示库
 
-[virtual_display](file:///home/zy/repo/rustdesk/libs/virtual_display) 为 Windows 提供虚拟显示功能，允许创建额外的虚拟显示器。
+[virtual_display](../../libs/virtual_display) 为 Windows 提供虚拟显示功能，允许创建额外的虚拟显示器。
 
 #### 2.3.6 remote_printer - 远程打印库
 
-[remote_printer](file:///home/zy/repo/rustdesk/libs/remote_printer) 提供远程打印功能，支持将本地打印机共享到远程端。
+[remote_printer](../../libs/remote_printer) 提供远程打印功能，支持将本地打印机共享到远程端。
 
 ## 3 技术栈详解
 
@@ -531,9 +531,9 @@ rpath = true            # 设置 RPATH
 
 RustDesk 提供完整的插件框架：
 
-- **插件管理器** ([plugin/manager.rs](file:///home/zy/repo/rustdesk/src/plugin/manager.rs))：插件生命周期管理
-- **原生处理器** ([plugin/native_handlers/](file:///home/zy/repo/rustdesk/src/plugin/native_handlers/))：原生功能暴露
-- **IPC 通信** ([plugin/ipc.rs](file:///home/zy/repo/rustdesk/src/plugin/ipc.rs))：主程序与插件间通信
+- **插件管理器** ([plugin/manager.rs](../../src/plugin/manager.rs))：插件生命周期管理
+- **原生处理器** ([plugin/native_handlers/](../../src/plugin/native_handlers/))：原生功能暴露
+- **IPC 通信** ([plugin/ipc.rs](../../src/plugin/ipc.rs))：主程序与插件间通信
 
 ### 6.3 白板协作
 
