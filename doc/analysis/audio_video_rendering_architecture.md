@@ -1692,6 +1692,490 @@ let limited_fps = if min_decode_fps < 30 {
 4. **客户端通知**：及时通知客户端显示器变化
 5. **无缝切换**：尽量减少采集中断时间
 
+### 4.11 系统组件间序列图（Mermaid）
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant UI as 用户界面
+    participant Client as 客户端
+    participant Network as 网络层
+    participant Server as 服务端
+    participant Display as Display Service
+    participant Capturer as 采集器
+    participant Encoder as 编码器
+    participant VideoQueue as 视频队列
+    participant Decoder as 解码器
+    participant Renderer as 渲染器
+
+    Note over UI,Renderer: 连接建立阶段
+    UI->>Client: 发起连接请求
+    Client->>Network: 发送连接消息
+    Network->>Server: 转发连接请求
+    Server->>Display: 初始化显示器服务
+    Display->>Capturer: 创建采集器
+    Capturer-->>Display: 采集器就绪
+    Display-->>Server: 显示器信息
+    Server->>Encoder: 初始化编码器
+    Encoder-->>Server: 编码器就绪
+    Server-->>Network: 连接确认
+    Network-->>Client: 连接成功
+    Client->>VideoQueue: 创建视频队列
+    Client->>Decoder: 初始化解码器
+    Decoder-->>Client: 解码器就绪
+    Client-->>UI: 连接成功
+
+    Note over UI,Renderer: 屏幕采集与编码阶段
+    loop 采集循环
+        Display->>Capturer: 捕获屏幕帧
+        Capturer-->>Display: 原始帧数据
+        Display->>Encoder: 格式转换(YUV)
+        Encoder->>Encoder: 编码压缩
+        Encoder->>Encoder: 码率控制(QoS)
+        Encoder-->>Display: 编码后的帧
+        Display->>Network: 发送视频数据包
+        Network->>Client: 转发视频数据
+        Client->>VideoQueue: 入队处理
+    end
+
+    Note over UI,Renderer: 解码与渲染阶段
+    loop 解码渲染循环
+        VideoQueue->>Decoder: 出队处理
+        Decoder->>Decoder: 检测编码格式
+        Decoder->>Decoder: 解码处理
+        Decoder->>Decoder: 格式转换(RGB)
+        Decoder-->>VideoQueue: 解码完成
+        VideoQueue->>Renderer: 渲染回调
+        Renderer->>Renderer: 显示输出
+        Renderer-->>Client: 渲染完成
+        Client->>Client: 更新FPS统计
+    end
+
+    Note over UI,Renderer: QoS控制阶段
+    loop QoS检测循环
+        Client->>Network: 发送延迟测试
+        Network-->>Client: 延迟响应
+        Client->>Client: 计算网络延迟
+        Client->>Network: 发送QoS参数
+        Network->>Server: 转发QoS参数
+        Server->>Encoder: 更新编码参数
+        Encoder-->>Server: 参数更新完成
+    end
+
+    Note over UI,Renderer: 显示器变化处理
+    Display->>Display: 检测显示器变化
+    alt 显示器配置变化
+        Display->>Capturer: 停止采集
+        Display->>Display: 重新枚举显示器
+        Display->>Capturer: 重新创建采集器
+        Display->>Network: 通知客户端
+        Network->>Client: 显示器变化通知
+        Client->>UI: 更新显示器列表
+        Display->>Capturer: 恢复采集
+    end
+
+    Note over UI,Renderer: 连接断开阶段
+    UI->>Client: 断开连接请求
+    Client->>Network: 发送断开消息
+    Network->>Server: 转发断开请求
+    Server->>Display: 停止显示器服务
+    Display->>Capturer: 停止采集
+    Capturer-->>Display: 采集停止
+    Display-->>Server: 服务停止
+    Server->>Encoder: 停止编码器
+    Encoder-->>Server: 编码器停止
+    Server-->>Network: 断开确认
+    Network-->>Client: 断开成功
+    Client->>VideoQueue: 清空队列
+    Client->>Decoder: 停止解码器
+    Decoder-->>Client: 解码器停止
+    Client-->>UI: 连接断开
+```
+
+**序列图说明**：
+1. **连接建立阶段**：展示从用户发起连接到所有组件初始化完成的完整流程
+2. **屏幕采集与编码阶段**：展示持续的屏幕捕获、编码和网络传输循环
+3. **解码与渲染阶段**：展示视频数据接收、解码和渲染的持续循环
+4. **QoS控制阶段**：展示网络延迟检测和QoS参数调整的循环
+5. **显示器变化处理**：展示显示器配置变化时的处理流程
+6. **连接断开阶段**：展示从断开请求到所有组件清理完成的流程
+
+### 4.12 用户界面与系统功能交互图（Mermaid）
+
+```mermaid
+graph TB
+    subgraph 用户界面层
+        UI[用户界面<br/>Flutter/Web/Desktop]
+        ConnectBtn[连接按钮]
+        SettingsBtn[设置按钮]
+        DisplaySelect[显示器选择]
+        QualitySlider[质量滑块]
+        FPSIndicator[FPS指示器]
+        VideoView[视频视图]
+        ControlPanel[控制面板]
+    end
+
+    subgraph 客户端控制层
+        Client[客户端核心]
+        ConnManager[连接管理器]
+        ConfigManager[配置管理器]
+        VideoHandler[视频处理器]
+        InputHandler[输入处理器]
+        AudioHandler[音频处理器]
+    end
+
+    subgraph 网络传输层
+        Network[网络层]
+        TCP[TCP连接]
+        UDP[UDP连接]
+        Secure[加密传输]
+    end
+
+    subgraph 服务端处理层
+        Server[服务端核心]
+        Auth[认证模块]
+        VideoService[视频服务]
+        AudioService[音频服务]
+        InputService[输入服务]
+    end
+
+    subgraph 系统功能层
+        Display[显示器管理]
+        Capturer[屏幕采集]
+        Encoder[编码器]
+        Decoder[解码器]
+        Renderer[渲染器]
+        Recorder[录制器]
+        Privacy[隐私模式]
+    end
+
+    UI -->|点击连接| ConnectBtn
+    ConnectBtn -->|发起连接请求| ConnManager
+    ConnManager -->|创建连接| Client
+    Client -->|建立TCP连接| Network
+    Network -->|加密通道| Secure
+    Secure -->|转发请求| Server
+    Server -->|验证身份| Auth
+    Auth -->|认证成功| VideoService
+
+    UI -->|点击设置| SettingsBtn
+    SettingsBtn -->|打开配置| ConfigManager
+    ConfigManager -->|设置质量| QualitySlider
+    QualitySlider -->|调整质量参数| VideoHandler
+    VideoHandler -->|发送QoS参数| Network
+
+    UI -->|选择显示器| DisplaySelect
+    DisplaySelect -->|切换显示器| Client
+    Client -->|发送切换请求| Network
+    Network -->|转发请求| VideoService
+    VideoService -->|更新采集器| Capturer
+    Capturer -->|返回显示器信息| Display
+    Display -->|发送到客户端| Network
+    Network -->|更新UI| UI
+
+    VideoView -->|显示视频| Renderer
+    Renderer -->|渲染回调| VideoHandler
+    VideoHandler -->|更新FPS统计| FPSIndicator
+    FPSIndicator -->|显示FPS| UI
+
+    UI -->|鼠标/键盘事件| ControlPanel
+    ControlPanel -->|发送输入事件| InputHandler
+    InputHandler -->|打包输入数据| Network
+    Network -->|转发输入| InputService
+    InputService -->|执行输入| Server
+
+    UI -->|开始录制| Recorder
+    Recorder -->|保存视频流| VideoHandler
+    VideoHandler -->|存储帧数据| Client
+
+    UI -->|启用隐私模式| Privacy
+    Privacy -->|切换采集方式| Capturer
+    Capturer -->|使用Magnifier API| Display
+
+    Client -->|接收视频数据| VideoHandler
+    VideoHandler -->|解码视频| Decoder
+    Decoder -->|渲染视频| Renderer
+    Renderer -->|更新视图| VideoView
+
+    Server -->|采集屏幕| Capturer
+    Capturer -->|编码视频| Encoder
+    Encoder -->|发送数据| Network
+    Network -->|传输数据| Client
+
+    style UI fill:#e1f5ff
+    style Client fill:#fff4e1
+    style Network fill:#e8f5e9
+    style Server fill:#fce4ec
+    style Display fill:#f3e5f5
+```
+
+**交互图说明**：
+1. **用户界面层**：展示用户可操作的界面元素
+2. **客户端控制层**：展示客户端的核心功能模块
+3. **网络传输层**：展示网络连接和数据传输
+4. **服务端处理层**：展示服务端的核心服务模块
+5. **系统功能层**：展示底层的系统功能实现
+
+**关键交互路径**：
+- **连接流程**：用户点击连接 → 连接管理器 → 网络层 → 服务端 → 认证 → 视频服务
+- **配置流程**：用户调整设置 → 配置管理器 → 视频处理器 → 网络传输 → 服务端
+- **显示器切换**：用户选择显示器 → 客户端 → 网络 → 视频服务 → 采集器 → 显示器管理
+- **视频渲染**：服务端采集 → 编码 → 网络传输 → 客户端接收 → 解码 → 渲染 → 视频视图
+- **输入处理**：用户输入 → 控制面板 → 输入处理器 → 网络 → 输入服务 → 服务端执行
+
+### 4.13 核心组件状态转换图（Mermaid）
+
+#### 4.13.1 编码器状态转换图
+
+```mermaid
+stateDiagram-v2
+    [*] --> Init: 创建编码器
+    Init --> Ready: 初始化完成
+    Ready --> Encoding: 接收帧数据
+    Encoding --> Sending: 编码完成
+    Sending --> Waiting: 发送完成
+    Waiting --> Encoding: 新帧到达
+    Encoding --> Retrying: 编码失败
+    Retrying --> Encoding: 重试成功
+    Retrying --> Ready: 重试次数>=10
+    Waiting --> Switching: 编码器切换
+    Switching --> Ready: 重新初始化
+    Ready --> [*]: 销毁编码器
+
+    note right of Encoding
+        编码帧数据
+        应用码率控制
+        插入关键帧
+    end note
+
+    note right of Retrying
+        最多重试10次
+        自动切换到软件编码
+        记录失败原因
+    end note
+
+    note right of Switching
+        格式协商变更
+        I444设置变更
+        采集方式变更
+    end note
+```
+
+#### 4.13.2 解码器状态转换图
+
+```mermaid
+stateDiagram-v2
+    [*] --> Init: 创建解码器
+    Init --> Ready: 初始化完成
+    Ready --> DetectFormat: 接收编码帧
+    DetectFormat --> Decoding: 格式未变化
+    DetectFormat --> Reset: 格式变化
+    Reset --> Decoding: 重置完成
+    Decoding --> ConvertToRGB: 解码成功
+    Decoding --> Retrying: 解码失败
+    Retrying --> Decoding: 重试成功
+    Retrying --> FormatError: 重试次数>=3
+    FormatError --> Init: 通知编码器切换
+    ConvertToRGB --> Rendering: 转换完成
+    Rendering --> Waiting: 渲染完成
+    Waiting --> DetectFormat: 新帧到达
+    Ready --> [*]: 销毁解码器
+
+    note right of DetectFormat
+        检测编码格式
+        选择解码器
+        硬件/软件解码
+    end note
+
+    note right of Decoding
+        解码编码帧
+        处理关键帧
+        错误恢复
+    end note
+
+    note right of Retrying
+        最多重试3次
+        自动切换解码器
+        记录失败原因
+    end note
+
+    note right of FormatError
+        格式不支持
+        解码器损坏
+        需要切换编码器
+    end note
+```
+
+#### 4.13.3 视频队列状态转换图
+
+```mermaid
+stateDiagram-v2
+    [*] --> Empty: 创建队列
+    Empty --> Filling: 接收第一帧
+    Filling --> Normal: 队列<容量/2
+    Filling --> Full: 队列>=容量/2
+    Normal --> Filling: 接收新帧
+    Normal --> Full: 队列>=容量/2
+    Full --> Discarding: 发送丢弃信号
+    Full --> Normal: 出队处理
+    Discarding --> ForcePush: 丢弃成功
+    Discarding --> ForcePush: 丢弃失败
+    ForcePush --> Empty: 强制推送新帧
+    ForcePush --> Filling: 强制推送新帧
+    Empty --> [*]: 销毁队列
+
+    note right of Empty
+        队列容量: 120帧
+        等待接收数据
+    end note
+
+    note right of Normal
+        正常工作状态
+        入队出队平衡
+        丢弃标志: false
+    end note
+
+    note right of Full
+        队列接近满载
+        触发丢弃策略
+        丢弃标志: true
+    end note
+
+    note right of Discarding
+        发送丢弃信号
+        等待响应
+        跳过当前帧
+    end note
+
+    note right of ForcePush
+        强制推送新帧
+        确保新帧入队
+        清除丢弃标志
+    end note
+```
+
+#### 4.13.4 QoS控制状态转换图
+
+```mermaid
+stateDiagram-v2
+    [*] --> Collecting: 开始QoS检测
+    Collecting --> Calculating: 收集延迟数据
+    Calculating --> Evaluating: 计算平均延迟
+    Evaluating --> GoodNetwork: 延迟<150ms
+    Evaluating --> PoorNetwork: 延迟>=150ms
+    GoodNetwork --> AdjustingUp: 网络良好
+    PoorNetwork --> AdjustingDown: 网络较差
+    AdjustingUp --> Updating: 提高帧率和质量
+    AdjustingDown --> Updating: 降低帧率和质量
+    Updating --> Waiting: 更新编码器参数
+    Waiting --> Collecting: 等待3秒
+    Collecting --> [*]: 停止QoS检测
+
+    note right of Collecting
+        收集网络延迟
+        维护历史队列
+        更新RTT计算
+    end note
+
+    note right of Calculating
+        计算平均延迟
+        减去RTT
+        得到实际网络延迟
+    end note
+
+    note right of GoodNetwork
+        网络延迟<150ms
+        优先保证流畅度
+        提高FPS和质量
+    end note
+
+    note right of PoorNetwork
+        网络延迟>=150ms
+        优先保证质量
+        降低FPS和质量
+    end note
+
+    note right of Updating
+        更新编码器参数
+        应用新的码率
+        应用新的帧率
+    end note
+
+    note right of Waiting
+        等待3秒
+        避免频繁调整
+        平滑过渡
+    end note
+```
+
+#### 4.13.5 显示器服务状态转换图
+
+```mermaid
+stateDiagram-v2
+    [*] --> Enumerating: 初始化显示器服务
+    Enumerating --> Creating: 枚举显示器
+    Creating --> Running: 创建采集器
+    Running --> Monitoring: 启动采集循环
+    Monitoring --> Running: 继续采集
+    Monitoring --> Checking: 检测显示器变化
+    Checking --> Running: 无变化
+    Checking --> Stopping: 检测到变化
+    Stopping --> ReEnumerating: 停止采集
+    ReEnumerating --> Notifying: 重新枚举显示器
+    Notifying --> Recreating: 通知客户端
+    Recreating --> Running: 重新创建采集器
+    Running --> [*]: 停止服务
+
+    note right of Enumerating
+        枚举所有显示器
+        获取显示器信息
+        检测多显示器
+    end note
+
+    note right of Creating
+        为每个显示器创建采集器
+        初始化采集参数
+        设置采集区域
+    end note
+
+    note right of Running
+        持续采集屏幕帧
+        格式转换
+        编码发送
+    end note
+
+    note right of Monitoring
+        监控采集状态
+        检测错误
+        性能统计
+    end note
+
+    note right of Checking
+        定期检查显示器配置
+        比较显示器数量
+        比较分辨率
+    end note
+
+    note right of Stopping
+        停止所有采集器
+        释放资源
+        等待重新初始化
+    end note
+
+    note right of Notifying
+        发送显示器变化通知
+        更新客户端配置
+        同步显示器列表
+    end note
+```
+
+**状态转换图说明**：
+1. **编码器状态转换图**：展示编码器从初始化到销毁的完整生命周期，包括正常编码、失败重试和编码器切换
+2. **解码器状态转换图**：展示解码器从初始化到销毁的完整生命周期，包括格式检测、解码处理和错误恢复
+3. **视频队列状态转换图**：展示视频队列的不同状态，包括空队列、正常工作、满载和丢弃模式
+4. **QoS控制状态转换图**：展示QoS控制的完整流程，包括延迟收集、网络判断和参数调整
+5. **显示器服务状态转换图**：展示显示器服务的完整生命周期，包括初始化、采集、变化检测和重新配置
+
 ---
 
 ## 5. 核心算法与技术难点
