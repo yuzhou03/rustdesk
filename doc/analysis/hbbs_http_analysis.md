@@ -6,9 +6,9 @@
 src/hbbs_http/
 ├── account.rs          # 账户认证模块
 ├── http_client.rs      # HTTP客户端模块
-├── sync.rs            # 同步服务模块
-├── record_upload.rs   # 录制上传模块
-└── downloader.rs      # 文件下载模块
+├── sync.rs             # 同步服务模块
+├── record_upload.rs    # 录制上传模块
+└── downloader.rs       # 文件下载模块
 ```
 
 ## 模块概述
